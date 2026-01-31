@@ -2,23 +2,26 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
-import { auth } from "./firebase"; // Import your firebase connection
+import { auth } from "./firebase"; 
 import Link from "next/link";
+import { useTheme } from "next-themes"; // 🔹 Imported Theme Hook
 
 export default function Home() {
   const [query, setQuery] = useState("");
-  const [user, setUser] = useState<User | null>(null); // Store current user
+  const [user, setUser] = useState<User | null>(null); 
   const router = useRouter();
+  const { theme, setTheme } = useTheme(); // 🔹 Hook to control Dark Mode
+  const [mounted, setMounted] = useState(false); // Fix for hydration errors
 
-  // 🔹 Check if user is logged in
+  // 🔹 Check if user is logged in & Fix Hydration
   useEffect(() => {
+    setMounted(true);
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
-    return () => unsubscribe(); // Cleanup listener
+    return () => unsubscribe(); 
   }, []);
 
-  // 🔹 Logout Function
   const handleLogout = async () => {
     await signOut(auth);
     alert("Logged out successfully!");
@@ -31,16 +34,32 @@ export default function Home() {
     }
   };
 
+  // Prevent hydration mismatch (wait for client load)
+  if (!mounted) return null;
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-300 bg-[#f0f4f8] dark:bg-[#1e293b]">
       
-      {/* 🔹 NEW: Top Navigation Bar */}
+      {/* 🔹 Top Navigation Bar */}
       <div className="absolute top-6 right-6 flex items-center gap-4">
+        
+        {/* 🌙 Dark Mode Toggle (Added Back) */}
+        <button
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all
+          bg-[#f0f4f8] dark:bg-[#1e293b]
+          shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff]
+          dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55]
+          hover:scale-110 active:scale-95"
+        >
+          {theme === "dark" ? "☀️" : "🌙"}
+        </button>
+
         {user ? (
-          // IF LOGGED IN: Show Name & Logout
+          // IF LOGGED IN
           <div className="flex items-center gap-4">
             <span className="font-bold text-gray-700 dark:text-gray-200 hidden md:block">
-              Welcome, {user.displayName || "User"} 👋
+              {user.displayName ? `Hi, ${user.displayName.split(' ')[0]}` : "Welcome"} 👋
             </span>
             <button
               onClick={handleLogout}
@@ -50,7 +69,7 @@ export default function Home() {
             </button>
           </div>
         ) : (
-          // IF NOT LOGGED IN: Show Login & Signup
+          // IF NOT LOGGED IN
           <div className="flex gap-4">
             <Link href="/login">
               <button className="px-6 py-2 rounded-xl font-bold text-gray-600 dark:text-gray-300 bg-[#f0f4f8] dark:bg-[#1e293b] 
@@ -98,7 +117,7 @@ export default function Home() {
         </button>
       </form>
       
-      <p className="mt-8 text-gray-500 dark:text-gray-400 font-medium">
+      <p className="mt-8 text-gray-500 dark:text-gray-400 font-medium text-center px-4">
         Powered by AI • Real-time Prices • Smart Savings
       </p>
     </div>
