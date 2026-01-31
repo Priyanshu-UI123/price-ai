@@ -26,7 +26,7 @@ function SearchResults() {
     if (query) {
       setLoading(true);
       // NOTE: Make sure this URL matches your Render Backend URL
-      fetch(`https://price-ai-backend.onrender.com/search/${query}`)
+      fetch(`https://price-ai.onrender.com/search/${query}`)
         .then((res) => res.json())
         .then((data) => {
           setResults(data.results);
