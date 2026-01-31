@@ -23,7 +23,7 @@ export default function ResultsPage() {
   useEffect(() => {
     if (query) {
       setLoading(true);
-      fetch(`http://127.0.0.1:8000/search/${query}`)
+      fetch(`https://price-ai.onrender.com`)
         .then((res) => res.json())
         .then((data) => {
           setResults(data.results);
