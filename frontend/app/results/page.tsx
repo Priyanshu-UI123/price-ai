@@ -47,28 +47,33 @@ function SearchResults() {
     }
   }, [query]);
 
-  // 🔹 ULTIMATE LINK FIXER 🔹
+  // 🔹 THE "SURGICAL" LINK CLEANER 🔹
+  // Extracts the REAL link from inside Google's tracking wrapper
   const getSafeLink = (link: string, source: string, title: string) => {
-    if (!link) {
-        // Only search if the link is completely missing
-        return `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(title)}`;
+    if (!link) return `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(title)}`;
+
+    // 1. If it is a Google Redirect (starts with /url? or contains google.com/url)
+    // We use Regex to find the "url=" or "q=" part and grab the real link inside.
+    if (link.includes("url?") || link.includes("/url") || link.includes("google.com")) {
+        const match = link.match(/[?&](url|q)=([^&]+)/);
+        if (match && match[2]) {
+            // Decode it (Turn 'https%3A' back into 'https:')
+            const decoded = decodeURIComponent(match[2]);
+            if (decoded.startsWith("http")) return decoded;
+        }
     }
 
-    // 1. If it's already a full valid URL (http/https), trust it.
+    // 2. If it's already a clean direct link, use it.
     if (link.startsWith("http")) return link;
 
-    // 2. If it is a Google Redirect or Ad link (starts with /url, /aclk, /shopping),
-    // we PREPEND google.com. Google will then bounce the user to the real store.
-    if (link.startsWith("/")) {
-        return `https://www.google.com${link}`;
-    }
-
-    // 3. Fallback for weird partial links: try to guess the domain based on source
+    // 3. If it's a relative path (e.g., /dp/B08...), attach the correct store domain.
     const lowerSource = source ? source.toLowerCase() : "";
     if (lowerSource.includes("amazon")) return `https://www.amazon.in${link.startsWith("/") ? "" : "/"}${link}`;
     if (lowerSource.includes("flipkart")) return `https://www.flipkart.com${link.startsWith("/") ? "" : "/"}${link}`;
+    if (lowerSource.includes("croma")) return `https://www.croma.com${link.startsWith("/") ? "" : "/"}${link}`;
+    if (lowerSource.includes("reliance")) return `https://www.reliancedigital.in${link.startsWith("/") ? "" : "/"}${link}`;
 
-    // 4. Last resort: Search
+    // 4. Final Fallback: Search Google Shopping for this specific item title
     return `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(title)}`;
   };
 
@@ -186,6 +191,7 @@ function SearchResults() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {displayResults.map((item, index) => {
               const isCheapest = getPriceValue(item.price) === lowestPrice;
+              // 🔹 Use the new cleaner
               const safeLink = getSafeLink(item.link, item.source, item.name);
 
               return (
