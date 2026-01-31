@@ -12,7 +12,8 @@ export default function Home() {
   const router = useRouter();
   const { theme, setTheme } = useTheme(); 
   
-  // We use this to prevent hydration mismatch on the Theme Toggle
+  // State to handle the Mobile Dropdown Menu
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false); 
 
   useEffect(() => {
@@ -25,6 +26,7 @@ export default function Home() {
 
   const handleLogout = async () => {
     await signOut(auth);
+    setIsMenuOpen(false); // Close menu after logout
     alert("Logged out successfully!");
   };
 
@@ -39,84 +41,105 @@ export default function Home() {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-300 bg-[#f0f4f8] dark:bg-[#1e293b]">
       
       {/* 🔹 Top Navigation Bar */}
-      <div className="absolute top-6 right-6 flex items-center gap-4 flex-wrap justify-end">
+      <div className="absolute top-6 right-6 z-50 flex flex-col items-end">
         
-        {/* 🌙 Dark Mode Toggle - Only render icon when mounted to prevent error */}
-        <button
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all
-          bg-[#f0f4f8] dark:bg-[#1e293b]
-          shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff]
-          dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55]
-          hover:scale-110 active:scale-95"
-          title="Toggle Theme"
-        >
-          {mounted ? (theme === "dark" ? "☀️" : "🌙") : "🌙"}
-        </button>
-
-        {user ? (
-          // IF LOGGED IN
-          <div className="flex items-center gap-4 flex-wrap justify-end">
+        {/* Top Row: Theme Toggle + Hamburger (Mobile) OR Full Menu (Desktop) */}
+        <div className="flex items-center gap-4">
             
-            {/* 📦 Orders Button */}
-            <Link href="/orders">
-                <button className="hidden md:block px-4 py-2 rounded-xl font-bold text-gray-600 dark:text-gray-300 bg-[#f0f4f8] dark:bg-[#1e293b] 
-                shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff] 
-                dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55] 
-                hover:scale-105 transition-transform">
-                📦 Orders
-                </button>
-            </Link>
-
-            {/* ❤️ Wishlist Button */}
-            <Link href="/wishlist">
-                <button className="hidden md:block px-4 py-2 rounded-xl font-bold text-gray-600 dark:text-gray-300 bg-[#f0f4f8] dark:bg-[#1e293b] 
-                shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff] 
-                dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55] 
-                hover:scale-105 transition-transform">
-                ❤️ Wishlist
-                </button>
-            </Link>
-
-            {/* 🛒 Cart Button */}
-            <Link href="/cart">
-                <button className="hidden md:block px-4 py-2 rounded-xl font-bold text-gray-600 dark:text-gray-300 bg-[#f0f4f8] dark:bg-[#1e293b] 
-                shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff] 
-                dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55] 
-                hover:scale-105 transition-transform">
-                🛒 Cart
-                </button>
-            </Link>
-
-            <span className="font-bold text-gray-700 dark:text-gray-200 hidden lg:block">
-              {user.displayName ? `Hi, ${user.displayName.split(' ')[0]}` : "Welcome"} 👋
-            </span>
-            
+            {/* 🌙 Dark Mode Toggle (Always Visible) */}
             <button
-              onClick={handleLogout}
-              className="px-6 py-2 rounded-xl font-bold text-white bg-red-500 shadow-lg hover:scale-105 transition-transform"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all
+            bg-[#f0f4f8] dark:bg-[#1e293b]
+            shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff]
+            dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55]
+            hover:scale-110 active:scale-95"
+            title="Toggle Theme"
             >
-              Logout
+            {mounted ? (theme === "dark" ? "☀️" : "🌙") : "🌙"}
             </button>
-          </div>
-        ) : (
-          // IF NOT LOGGED IN
-          <div className="flex gap-4">
-            <Link href="/login">
-              <button className="px-6 py-2 rounded-xl font-bold text-gray-600 dark:text-gray-300 bg-[#f0f4f8] dark:bg-[#1e293b] 
-              shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff] 
-              dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55] 
-              hover:scale-105 transition-transform">
-                Login
-              </button>
-            </Link>
-            <Link href="/signup">
-              <button className="px-6 py-2 rounded-xl font-bold text-white bg-blue-500 shadow-lg hover:scale-105 transition-transform">
-                Sign Up
-              </button>
-            </Link>
-          </div>
+
+            {/* 🍔 Hamburger Button (Visible ONLY on Mobile) */}
+            <button 
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="md:hidden w-12 h-12 rounded-xl flex items-center justify-center text-2xl
+                bg-[#f0f4f8] dark:bg-[#1e293b] text-gray-700 dark:text-gray-200
+                shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff]
+                dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55]
+                active:scale-95 transition-all"
+            >
+                {isMenuOpen ? "✕" : "☰"}
+            </button>
+
+            {/* 🖥️ DESKTOP MENU (Hidden on Mobile) */}
+            <div className="hidden md:flex items-center gap-4">
+                {user ? (
+                    <>
+                        <Link href="/orders">
+                            <button className="px-4 py-2 rounded-xl font-bold text-gray-600 dark:text-gray-300 bg-[#f0f4f8] dark:bg-[#1e293b] shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff] dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55] hover:scale-105 transition-transform">
+                            📦 Orders
+                            </button>
+                        </Link>
+                        <Link href="/wishlist">
+                            <button className="px-4 py-2 rounded-xl font-bold text-gray-600 dark:text-gray-300 bg-[#f0f4f8] dark:bg-[#1e293b] shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff] dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55] hover:scale-105 transition-transform">
+                            ❤️ Wishlist
+                            </button>
+                        </Link>
+                        <Link href="/cart">
+                            <button className="px-4 py-2 rounded-xl font-bold text-gray-600 dark:text-gray-300 bg-[#f0f4f8] dark:bg-[#1e293b] shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff] dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55] hover:scale-105 transition-transform">
+                            🛒 Cart
+                            </button>
+                        </Link>
+                        <span className="font-bold text-gray-700 dark:text-gray-200">
+                            {user.displayName ? `Hi, ${user.displayName.split(' ')[0]}` : "Welcome"} 👋
+                        </span>
+                        <button onClick={handleLogout} className="px-6 py-2 rounded-xl font-bold text-white bg-red-500 shadow-lg hover:scale-105 transition-transform">
+                            Logout
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <Link href="/login"><button className="px-6 py-2 rounded-xl font-bold text-gray-600 dark:text-gray-300 bg-[#f0f4f8] dark:bg-[#1e293b] shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff] dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55] hover:scale-105 transition-transform">Login</button></Link>
+                        <Link href="/signup"><button className="px-6 py-2 rounded-xl font-bold text-white bg-blue-500 shadow-lg hover:scale-105 transition-transform">Sign Up</button></Link>
+                    </>
+                )}
+            </div>
+        </div>
+
+        {/* 📱 MOBILE DROPDOWN MENU (Visible only when isMenuOpen is true) */}
+        {isMenuOpen && (
+            <div className="mt-4 w-48 flex flex-col gap-3 p-4 rounded-2xl bg-[#f0f4f8] dark:bg-[#1e293b] shadow-[10px_10px_20px_#cdd4db,-10px_-10px_20px_#ffffff] dark:shadow-[10px_10px_20px_#0f172a,-10px_-10px_20px_#2d3b55] md:hidden animate-in slide-in-from-top-2">
+                {user ? (
+                    <>
+                        <div className="text-center font-bold text-gray-700 dark:text-gray-200 mb-2 border-b border-gray-300 dark:border-gray-700 pb-2">
+                             {user.displayName ? `Hi, ${user.displayName.split(' ')[0]}` : "Welcome"} 👋
+                        </div>
+                        <Link href="/orders" onClick={() => setIsMenuOpen(false)}>
+                            <button className="w-full text-left px-4 py-2 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">📦 Orders</button>
+                        </Link>
+                        <Link href="/wishlist" onClick={() => setIsMenuOpen(false)}>
+                            <button className="w-full text-left px-4 py-2 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">❤️ Wishlist</button>
+                        </Link>
+                        <Link href="/cart" onClick={() => setIsMenuOpen(false)}>
+                            <button className="w-full text-left px-4 py-2 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">🛒 Cart</button>
+                        </Link>
+                        <button onClick={handleLogout} className="w-full text-left px-4 py-2 rounded-xl font-bold text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+                            Logout
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+                             <button className="w-full text-left px-4 py-2 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Login</button>
+                        </Link>
+                        <Link href="/signup" onClick={() => setIsMenuOpen(false)}>
+                             <button className="w-full text-left px-4 py-2 rounded-xl font-bold text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">Sign Up</button>
+                        </Link>
+                    </>
+                )}
+            </div>
         )}
+
       </div>
 
       {/* 🔹 Title */}
