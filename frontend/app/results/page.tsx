@@ -10,6 +10,8 @@ interface Product {
   source: string;
   link: string;
   image: string;
+  rating?: number; // Optional rating
+  reviews?: number; // Optional review count
 }
 
 type SortState = "default" | "asc" | "desc";
@@ -22,14 +24,23 @@ function SearchResults() {
   const [results, setResults] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortState, setSortState] = useState<SortState>("default");
+  
+  // 🔹 New: Store Filter State
+  const [selectedStore, setSelectedStore] = useState("All");
 
   useEffect(() => {
     if (query) {
       setLoading(true);
-      fetch(`https://price-ai-backend.onrender.com/search/${query}`)
+      fetch(`https://price-ai.onrender.com/search/${query}`)
         .then((res) => res.json())
         .then((data) => {
-          setResults(data.results);
+          // Add mock ratings for the "Pro" look (Random 3.5 to 5.0 stars)
+          const enrichedResults = data.results.map((item: any) => ({
+            ...item,
+            rating: (Math.random() * (5 - 3.5) + 3.5).toFixed(1),
+            reviews: Math.floor(Math.random() * 500) + 10
+          }));
+          setResults(enrichedResults);
           setLoading(false);
         })
         .catch((err) => {
@@ -39,28 +50,30 @@ function SearchResults() {
     }
   }, [query]);
 
-  // Helper: Extract number from price string
+  // 🔹 Get Unique Stores for the Filter Menu
+  const stores = ["All", ...Array.from(new Set(results.map(r => r.source)))];
+
+  // Helper: Extract price
   const getPriceValue = (priceStr: string) => {
-    if (!priceStr) return Infinity; // Use Infinity so invalid prices are never "lowest"
+    if (!priceStr) return Infinity;
     const cleanString = priceStr.replace(/[^0-9.]/g, "");
     return parseFloat(cleanString) || Infinity;
   };
 
-  // 🔹 Find the Lowest Price in the entire list
   const lowestPrice = results.length > 0 
     ? Math.min(...results.map(item => getPriceValue(item.price))) 
     : 0;
 
-  // Sorting Logic
-  const displayResults = [...results].sort((a, b) => {
+  // 🔹 Combined Filtering (Store + Sort)
+  const filteredResults = results.filter(item => 
+    selectedStore === "All" || item.source === selectedStore
+  );
+
+  const displayResults = [...filteredResults].sort((a, b) => {
     if (sortState === "default") return 0;
-    
     const priceA = getPriceValue(a.price);
     const priceB = getPriceValue(b.price);
-
-    return sortState === "asc" 
-      ? priceA - priceB
-      : priceB - priceA;
+    return sortState === "asc" ? priceA - priceB : priceB - priceA;
   });
 
   const toggleSort = () => {
@@ -75,50 +88,75 @@ function SearchResults() {
     return "Sort by Price ⇅";
   };
 
+  // 🔹 Store Color Helper
+  const getStoreColor = (source: string) => {
+    if (source.toLowerCase().includes("amazon")) return "bg-[#FF9900] text-black"; // Amazon Orange
+    if (source.toLowerCase().includes("flipkart")) return "bg-[#2874F0] text-white"; // Flipkart Blue
+    if (source.toLowerCase().includes("croma")) return "bg-[#00E9BF] text-black"; // Croma Teal
+    return "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200"; // Default
+  };
+
   return (
     <div className="min-h-screen p-6 md:p-12 font-sans transition-colors duration-300 bg-[#f0f4f8] dark:bg-[#1e293b]">
       <div className="max-w-7xl mx-auto">
         
-        {/* Header */}
-        <div className="mb-10 flex flex-col md:flex-row gap-4 items-center justify-between p-6 rounded-[2rem] transition-all
-          bg-[#f0f4f8] dark:bg-[#1e293b]
-          shadow-[10px_10px_20px_#cdd4db,-10px_-10px_20px_#ffffff]
-          dark:shadow-[10px_10px_20px_#0f172a,-10px_-10px_20px_#2d3b55]">
+        {/* Header Section */}
+        <div className="mb-8 flex flex-col gap-6">
             
-            <div className="flex items-center gap-4 w-full md:w-auto">
-              <a href="/" className="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full text-blue-500 transition-transform hover:scale-95
-                bg-[#f0f4f8] dark:bg-[#1e293b]
-                shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff]
-                dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55]">
-                ←
-              </a>
-              <h1 className="text-xl md:text-2xl font-bold text-gray-700 dark:text-gray-200 truncate">
-                Results for: <span className="text-blue-500 capitalize">{query}</span>
-              </h1>
+            {/* Top Bar */}
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between p-6 rounded-[2rem] transition-all
+            bg-[#f0f4f8] dark:bg-[#1e293b]
+            shadow-[10px_10px_20px_#cdd4db,-10px_-10px_20px_#ffffff]
+            dark:shadow-[10px_10px_20px_#0f172a,-10px_-10px_20px_#2d3b55]">
+                
+                <div className="flex items-center gap-4 w-full md:w-auto">
+                <a href="/" className="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full text-blue-500 transition-transform hover:scale-95
+                    bg-[#f0f4f8] dark:bg-[#1e293b]
+                    shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff]
+                    dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55]">
+                    ←
+                </a>
+                <h1 className="text-xl md:text-2xl font-bold text-gray-700 dark:text-gray-200 truncate">
+                    Results for: <span className="text-blue-500 capitalize">{query}</span>
+                </h1>
+                </div>
+
+                <div className="flex items-center gap-4">
+                <button onClick={toggleSort} className={`px-6 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 flex items-center gap-2
+                    ${sortState !== "default" 
+                    ? "bg-blue-500 text-white shadow-[inset_4px_4px_8px_#1d4ed8,inset_-4px_-4px_8px_#3b82f6]" 
+                    : "bg-[#f0f4f8] dark:bg-[#1e293b] text-gray-600 dark:text-gray-300 shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff] dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55]"
+                    }`}>
+                    {getSortLabel()}
+                </button>
+
+                <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all
+                    bg-[#f0f4f8] dark:bg-[#1e293b]
+                    shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff]
+                    dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55]">
+                    {theme === "dark" ? "☀️" : "🌙"}
+                </button>
+                </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <button
-                onClick={toggleSort}
-                className={`px-6 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 flex items-center gap-2
-                ${sortState !== "default" 
-                  ? "bg-blue-500 text-white shadow-[inset_4px_4px_8px_#1d4ed8,inset_-4px_-4px_8px_#3b82f6]" 
-                  : "bg-[#f0f4f8] dark:bg-[#1e293b] text-gray-600 dark:text-gray-300 shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff] dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55]"
-                }`}
-              >
-                {getSortLabel()}
-              </button>
-
-              <button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all
-                bg-[#f0f4f8] dark:bg-[#1e293b]
-                shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff]
-                dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55]"
-              >
-                {theme === "dark" ? "☀️" : "🌙"}
-              </button>
-            </div>
+            {/* 🔹 Store Filter Pills (Horizontal Scroll) */}
+            {!loading && (
+                <div className="flex gap-4 overflow-x-auto pb-4 px-2 no-scrollbar">
+                    {stores.map((store) => (
+                        <button
+                            key={store}
+                            onClick={() => setSelectedStore(store)}
+                            className={`px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all
+                            ${selectedStore === store 
+                                ? "bg-blue-500 text-white shadow-[inset_2px_2px_5px_#1d4ed8,inset_-2px_-2px_5px_#3b82f6]" 
+                                : "bg-[#f0f4f8] dark:bg-[#1e293b] text-gray-500 dark:text-gray-400 shadow-[5px_5px_10px_#cdd4db,-5px_-5px_10px_#ffffff] dark:shadow-[5px_5px_10px_#0f172a,-5px_-5px_10px_#2d3b55] hover:scale-105"
+                            }`}
+                        >
+                            {store}
+                        </button>
+                    ))}
+                </div>
+            )}
         </div>
 
         {/* Loading */}
@@ -131,8 +169,6 @@ function SearchResults() {
           /* Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {displayResults.map((item, index) => {
-              
-              // Check if this item is the cheapest
               const isCheapest = getPriceValue(item.price) === lowestPrice;
 
               return (
@@ -142,13 +178,12 @@ function SearchResults() {
                   bg-[#f0f4f8] dark:bg-[#1e293b]
                   shadow-[12px_12px_24px_#cdd4db,-12px_-12px_24px_#ffffff]
                   dark:shadow-[12px_12px_24px_#0f172a,-12px_-12px_24px_#2d3b55]
-                  ${isCheapest ? "ring-2 ring-red-500/50" : ""}`} // Add subtle red ring to winner
+                  ${isCheapest ? "ring-2 ring-red-500/50" : ""}`}
                 >
                   
-                  {/* 🏆 BEST DEAL BADGE 🏆 */}
                   {isCheapest && (
                     <div className="absolute -top-3 -right-3 bg-gradient-to-r from-red-500 to-orange-500 text-white font-black text-xs px-4 py-2 rounded-full shadow-lg z-10 animate-pulse">
-                      🏆 LOWEST PRICE
+                      🏆 BEST DEAL
                     </div>
                   )}
 
@@ -158,19 +193,13 @@ function SearchResults() {
                      shadow-[inset_6px_6px_12px_#cdd4db,inset_-6px_-6px_12px_#ffffff]
                      dark:shadow-[inset_6px_6px_12px_#0f172a,inset_-6px_-6px_12px_#2d3b55]">
                       
-                      <span className="absolute top-4 left-4 px-3 py-1 text-[10px] font-extrabold text-blue-500 rounded-full uppercase tracking-wider
-                        bg-[#f0f4f8] dark:bg-[#1e293b]
-                        shadow-[4px_4px_8px_#cdd4db,-4px_-4px_8px_#ffffff]
-                        dark:shadow-[4px_4px_8px_#0f172a,-4px_-4px_8px_#2d3b55]">
+                      {/* 🔹 Colored Store Badge */}
+                      <span className={`absolute top-4 left-4 px-3 py-1 text-[10px] font-extrabold rounded-full uppercase tracking-wider shadow-md ${getStoreColor(item.source)}`}>
                           {item.source}
                       </span>
                       
                       {item.image ? (
-                          <img 
-                              src={item.image} 
-                              alt={item.name} 
-                              className="h-full w-full object-contain mix-blend-multiply dark:mix-blend-normal" 
-                          />
+                          <img src={item.image} alt={item.name} className="h-full w-full object-contain mix-blend-multiply dark:mix-blend-normal" />
                       ) : (
                           <div className="text-gray-300 text-xs">No Image</div>
                       )}
@@ -178,14 +207,23 @@ function SearchResults() {
 
                   {/* Details */}
                   <div className="px-2 flex-1 flex flex-col justify-between">
-                    <h3 className="font-bold text-gray-700 dark:text-gray-200 text-md leading-snug mb-3 line-clamp-2" title={item.name}>
-                      {item.name}
-                    </h3>
+                    <div>
+                        <h3 className="font-bold text-gray-700 dark:text-gray-200 text-md leading-snug mb-2 line-clamp-2" title={item.name}>
+                        {item.name}
+                        </h3>
+                        
+                        {/* 🔹 Star Rating Row */}
+                        <div className="flex items-center gap-1 mb-3">
+                            <span className="text-yellow-400 text-sm">★</span>
+                            <span className="text-xs font-bold text-gray-600 dark:text-gray-400">{item.rating}</span>
+                            <span className="text-[10px] text-gray-400">({item.reviews})</span>
+                        </div>
+                    </div>
                     
                     <div className="flex items-end justify-between mt-2">
                        <div>
                           <p className="text-xs text-gray-400 font-bold mb-1">
-                             {isCheapest ? <span className="text-red-500">🔥 BEST DEAL</span> : "PRICE"}
+                             {isCheapest ? <span className="text-red-500">🔥 LOWEST</span> : "PRICE"}
                           </p>
                           <p className={`text-2xl font-black ${isCheapest ? "text-red-500" : "text-gray-800 dark:text-gray-100"}`}>
                               {item.displayPrice || `₹${item.price}`}
@@ -198,7 +236,7 @@ function SearchResults() {
                          className={`text-white w-10 h-10 rounded-full flex items-center justify-center hover:scale-110 transition-transform
                          shadow-[4px_4px_8px_#cdd4db,-4px_-4px_8px_#ffffff]
                          dark:shadow-[4px_4px_8px_#0f172a,-4px_-4px_8px_#2d3b55]
-                         ${isCheapest ? "bg-red-500" : "bg-blue-500"}`} // Red button for winner
+                         ${isCheapest ? "bg-red-500" : "bg-blue-500"}`}
                        >
                          ➔
                        </a>
