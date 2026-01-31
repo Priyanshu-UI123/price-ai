@@ -47,48 +47,57 @@ function SearchResults() {
     }
   }, [query]);
 
-  // 🔹 BULLETPROOF LINK DECODER 🔹
-  const getSafeLink = (link: string, source: string, title: string) => {
+  // 🔹 UNIVERSAL LINK DECODER (Works for Cashify, Amazon, Anything) 🔹
+  const getSafeLink = (link: string, title: string) => {
+    // 1. Missing link? We have no choice but to search.
     if (!link) return `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(title)}`;
 
-    // 1. Direct Links (Already correct)
+    // 2. Already absolute? Trust it immediately.
     if (link.startsWith("http")) return link;
 
-    // 2. Specific Store Shortcuts (The most common issue!)
-    // If it starts with /dp/ (Amazon) or /p/ (Flipkart), we build the link manually.
+    // 3. Known Store Shortcuts (Relative paths)
     if (link.startsWith("/dp/") || link.startsWith("/gp/")) return `https://www.amazon.in${link}`;
     if (link.startsWith("/p/") || link.startsWith("/dl/")) return `https://www.flipkart.com${link}`;
-    
-    // 3. Google Redirect Decoder
-    // We try to extract the real URL hidden inside /url?q=...
-    if (link.startsWith("/url") || link.startsWith("/search")) {
+
+    // 4. DEEP DECODE: Look inside Google params for the REAL link
+    // This works for Cashify, Croma, etc. hidden inside "url?q=..."
+    if (link.includes("url") || link.includes("q=") || link.includes("adurl")) {
         try {
-            // Create a dummy URL object to parse the parameters easily
-            const urlObj = new URL(`https://google.com${link}`);
-            const realUrl = urlObj.searchParams.get("url") || urlObj.searchParams.get("q");
+            // Create a fake base URL so the parser works on relative paths
+            const urlObj = new URL(link, "https://www.google.com");
             
-            // If we found a real URL inside, return it!
-            if (realUrl && realUrl.startsWith("http")) {
-                return realUrl;
+            // Check all common places where the real link hides
+            const candidates = [
+                urlObj.searchParams.get("url"),
+                urlObj.searchParams.get("q"),
+                urlObj.searchParams.get("adurl"),
+                urlObj.searchParams.get("ds_dest_url")
+            ];
+
+            for (const candidate of candidates) {
+                if (candidate && candidate.startsWith("http")) {
+                    return decodeURIComponent(candidate); // Found it! Return the clean Cashify link.
+                }
             }
         } catch (e) {
-            console.error("Link parsing failed", e);
+            // Ignore errors and continue to fallback
         }
     }
 
-    // 4. Encrypted Ads (/aclk)
-    // These CANNOT be decoded. We MUST prepend google.com to make the redirect work.
-    // This will take the user to the store via a split-second Google redirect.
+    // 5. Brute Force Regex (Catch-all for messy strings)
+    const hiddenUrl = link.match(/(https?:\/\/[^&%]+)/);
+    if (hiddenUrl) {
+         return decodeURIComponent(hiddenUrl[0]);
+    }
+
+    // 6. IF WE FAILED TO DECODE:
+    // Do NOT search. Send the user to the redirect link.
+    // This handles encrypted ads (/aclk) that land on the product page.
     if (link.startsWith("/")) {
         return `https://www.google.com${link}`;
     }
 
-    // 5. Fallback: Reconstruct based on Source Name
-    const lowerSource = source ? source.toLowerCase() : "";
-    if (lowerSource.includes("amazon")) return `https://www.amazon.in${link.startsWith("/") ? "" : "/"}${link}`;
-    if (lowerSource.includes("flipkart")) return `https://www.flipkart.com${link.startsWith("/") ? "" : "/"}${link}`;
-
-    // 6. Absolute Last Resort (Search)
+    // 7. Last Resort (Only if link is totally broken)
     return `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(title)}`;
   };
 
@@ -131,6 +140,7 @@ function SearchResults() {
     if (source.toLowerCase().includes("amazon")) return "bg-[#FF9900] text-black";
     if (source.toLowerCase().includes("flipkart")) return "bg-[#2874F0] text-white";
     if (source.toLowerCase().includes("croma")) return "bg-[#00E9BF] text-black";
+    if (source.toLowerCase().includes("cashify")) return "bg-[#4CAF50] text-white"; // Added Cashify Green
     return "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200";
   };
 
@@ -206,7 +216,8 @@ function SearchResults() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {displayResults.map((item, index) => {
               const isCheapest = getPriceValue(item.price) === lowestPrice;
-              const safeLink = getSafeLink(item.link, item.source, item.name);
+              // 🔹 Use the Universal Decoder
+              const safeLink = getSafeLink(item.link, item.name);
 
               return (
                 <div 
