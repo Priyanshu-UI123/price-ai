@@ -47,33 +47,48 @@ function SearchResults() {
     }
   }, [query]);
 
-  // 🔹 THE "SURGICAL" LINK CLEANER 🔹
-  // Extracts the REAL link from inside Google's tracking wrapper
+  // 🔹 BULLETPROOF LINK DECODER 🔹
   const getSafeLink = (link: string, source: string, title: string) => {
     if (!link) return `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(title)}`;
 
-    // 1. If it is a Google Redirect (starts with /url? or contains google.com/url)
-    // We use Regex to find the "url=" or "q=" part and grab the real link inside.
-    if (link.includes("url?") || link.includes("/url") || link.includes("google.com")) {
-        const match = link.match(/[?&](url|q)=([^&]+)/);
-        if (match && match[2]) {
-            // Decode it (Turn 'https%3A' back into 'https:')
-            const decoded = decodeURIComponent(match[2]);
-            if (decoded.startsWith("http")) return decoded;
+    // 1. Direct Links (Already correct)
+    if (link.startsWith("http")) return link;
+
+    // 2. Specific Store Shortcuts (The most common issue!)
+    // If it starts with /dp/ (Amazon) or /p/ (Flipkart), we build the link manually.
+    if (link.startsWith("/dp/") || link.startsWith("/gp/")) return `https://www.amazon.in${link}`;
+    if (link.startsWith("/p/") || link.startsWith("/dl/")) return `https://www.flipkart.com${link}`;
+    
+    // 3. Google Redirect Decoder
+    // We try to extract the real URL hidden inside /url?q=...
+    if (link.startsWith("/url") || link.startsWith("/search")) {
+        try {
+            // Create a dummy URL object to parse the parameters easily
+            const urlObj = new URL(`https://google.com${link}`);
+            const realUrl = urlObj.searchParams.get("url") || urlObj.searchParams.get("q");
+            
+            // If we found a real URL inside, return it!
+            if (realUrl && realUrl.startsWith("http")) {
+                return realUrl;
+            }
+        } catch (e) {
+            console.error("Link parsing failed", e);
         }
     }
 
-    // 2. If it's already a clean direct link, use it.
-    if (link.startsWith("http")) return link;
+    // 4. Encrypted Ads (/aclk)
+    // These CANNOT be decoded. We MUST prepend google.com to make the redirect work.
+    // This will take the user to the store via a split-second Google redirect.
+    if (link.startsWith("/")) {
+        return `https://www.google.com${link}`;
+    }
 
-    // 3. If it's a relative path (e.g., /dp/B08...), attach the correct store domain.
+    // 5. Fallback: Reconstruct based on Source Name
     const lowerSource = source ? source.toLowerCase() : "";
     if (lowerSource.includes("amazon")) return `https://www.amazon.in${link.startsWith("/") ? "" : "/"}${link}`;
     if (lowerSource.includes("flipkart")) return `https://www.flipkart.com${link.startsWith("/") ? "" : "/"}${link}`;
-    if (lowerSource.includes("croma")) return `https://www.croma.com${link.startsWith("/") ? "" : "/"}${link}`;
-    if (lowerSource.includes("reliance")) return `https://www.reliancedigital.in${link.startsWith("/") ? "" : "/"}${link}`;
 
-    // 4. Final Fallback: Search Google Shopping for this specific item title
+    // 6. Absolute Last Resort (Search)
     return `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(title)}`;
   };
 
@@ -191,7 +206,6 @@ function SearchResults() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {displayResults.map((item, index) => {
               const isCheapest = getPriceValue(item.price) === lowestPrice;
-              // 🔹 Use the new cleaner
               const safeLink = getSafeLink(item.link, item.source, item.name);
 
               return (
