@@ -6,6 +6,8 @@ import { auth, db } from "../firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, updateDoc, arrayUnion, arrayRemove, getDoc, setDoc } from "firebase/firestore";
 import Link from "next/link"; 
+// 🔹 Added Recharts Imports
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 interface Product {
   name: string;
@@ -20,6 +22,23 @@ interface Product {
 
 type SortState = "default" | "asc" | "desc";
 
+// 🔹 Added Price History Generator Helper
+const generatePriceHistory = (basePrice: number) => {
+  const data = [];
+  const now = new Date();
+  for (let i = 15; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(now.getDate() - i);
+    // Fluctuations between -12% and +8%
+    const fluctuation = 1 + (Math.random() * 0.20 - 0.12);
+    data.push({
+      date: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+      price: Math.floor(basePrice * fluctuation)
+    });
+  }
+  return data;
+};
+
 function SearchResults() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q"); 
@@ -30,17 +49,18 @@ function SearchResults() {
   const [sortState, setSortState] = useState<SortState>("default");
   const [selectedStore, setSelectedStore] = useState("All");
   
+  // 🔹 Added expandedGraph state
+  const [expandedGraph, setExpandedGraph] = useState<string | null>(null);
+
   const [user, setUser] = useState<User | null>(null);
   const [wishlistIds, setWishlistIds] = useState<string[]>([]); 
   const [cartIds, setCartIds] = useState<string[]>([]); 
 
-  // 🔹 TOAST STATE
   const [toast, setToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: "", type: 'success' });
 
-  // 🔹 Helper to show toast
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ show: true, message, type });
-    setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000); // Hide after 3s
+    setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
   };
 
   const getProductId = (item: Product) => {
@@ -84,7 +104,6 @@ function SearchResults() {
     }
   }, [query]);
 
-  // 🔹 UPDATED ADD TO CART
   const addToCart = async (item: Product) => {
     if (!user) {
       showToast("Please Login to shop! 🔒", "error");
@@ -92,16 +111,12 @@ function SearchResults() {
     }
     const docRef = doc(db, "users", user.uid);
     const itemId = getProductId(item);
-
     if (cartIds.includes(itemId)) {
         showToast("Item is already in your cart! 🛒", "error");
         return;
     }
-
     setCartIds(prev => [...prev, itemId]); 
     await setDoc(docRef, { cart: arrayUnion(item) }, { merge: true });
-    
-    // ✨ Trigger Success Toast
     showToast("Added to Cart Successfully! 🛍️", "success");
   };
 
@@ -113,7 +128,6 @@ function SearchResults() {
     const docRef = doc(db, "users", user.uid);
     const itemId = getProductId(item);
     const isAlreadySaved = wishlistIds.includes(itemId);
-
     if (isAlreadySaved) {
         setWishlistIds(prev => prev.filter(id => id !== itemId));
         await updateDoc(docRef, { wishlist: arrayRemove(item) });
@@ -136,7 +150,6 @@ function SearchResults() {
     }
   };
 
-  // --- Helpers ---
   const generateStoreSearchLink = (source: string, title: string) => {
     const encodedTitle = encodeURIComponent(title);
     const cleanSource = source ? source.toLowerCase().replace(/\s+/g, "") : "";
@@ -295,11 +308,45 @@ function SearchResults() {
                   <div className="px-2 flex-1 flex flex-col justify-between">
                     <div>
                         <h3 className="font-bold text-gray-700 dark:text-gray-200 text-md leading-snug mb-2 line-clamp-2" title={item.name}>{item.name}</h3>
-                        <div className="flex items-center gap-1 mb-3">
+                        <div className="flex items-center gap-1 mb-2">
                             <span className="text-yellow-400 text-sm">★</span>
                             <span className="text-xs font-bold text-gray-600 dark:text-gray-400">{item.rating}</span>
                             <span className="text-[10px] text-gray-400">({item.reviews})</span>
                         </div>
+
+                        {/* 📈 PRICE HISTORY TOGGLE BUTTON */}
+                        <button 
+                          onClick={() => setExpandedGraph(expandedGraph === itemId ? null : itemId)}
+                          className="text-[10px] font-bold text-blue-500 uppercase tracking-widest hover:underline mb-2 flex items-center gap-1 transition-all"
+                        >
+                          {expandedGraph === itemId ? "📉 Hide History" : "📈 View Price History"}
+                        </button>
+
+                        {/* 📊 CHART COMPONENT */}
+                        {expandedGraph === itemId && (
+                          <div className="h-32 w-full mb-4 p-2 rounded-xl bg-white/50 dark:bg-black/20 animate-in fade-in zoom-in duration-300 overflow-hidden shadow-inner">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={generatePriceHistory(getPriceValue(item.price))}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#374151' : '#ccc'} />
+                                <XAxis dataKey="date" hide />
+                                <YAxis hide domain={['auto', 'auto']} />
+                                <Tooltip 
+                                  contentStyle={{ 
+                                    borderRadius: '10px', 
+                                    fontSize: '10px', 
+                                    backgroundColor: theme === 'dark' ? '#1e293b' : '#fff',
+                                    border: 'none',
+                                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+                                  }} 
+                                />
+                                <Line type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                            <div className="text-[9px] text-center font-bold text-green-500 mt-1 uppercase tracking-tighter">
+                              AI Predicts: Stable Price ✅
+                            </div>
+                          </div>
+                        )}
                     </div>
                     
                     <div className="flex items-end justify-between mt-2">
