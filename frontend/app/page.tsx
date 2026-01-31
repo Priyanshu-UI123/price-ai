@@ -216,6 +216,18 @@ export default function Home() {
           <div className="w-10 h-2 bg-blue-500 rounded-full" />
       </div>
 
+      {/* 🔹 CREATOR SIGNATURE */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.6 }}
+        transition={{ delay: 1.5, duration: 1 }}
+        className="absolute bottom-6 w-full text-center pointer-events-none"
+      >
+        <p className="text-[10px] font-black tracking-[0.3em] uppercase text-gray-400 dark:text-gray-500">
+          Made With <span className="text-red-500 inline-block animate-pulse">❤️</span> By Priyansu
+        </p>
+      </motion.div>
+
     </div>
   );
 }
