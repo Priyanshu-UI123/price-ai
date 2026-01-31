@@ -47,37 +47,28 @@ function SearchResults() {
     }
   }, [query]);
 
-  // 🔹 SMART LINK FIXER 🔹
-  // 1. Tries to fix relative links (/dp/...)
-  // 2. Unlocks Google Redirects (/url?url=...)
-  // 3. Fallback: Searches Google Shopping if link is broken
+  // 🔹 ULTIMATE LINK FIXER 🔹
   const getSafeLink = (link: string, source: string, title: string) => {
-    
-    // Case 0: No link? Google Shopping Search for this item.
     if (!link) {
+        // Only search if the link is completely missing
         return `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(title)}`;
     }
 
-    // Case 1: Is it a Google Redirect? (Common in scrapers)
-    // Example: /url?url=https://amazon...
-    if (link.startsWith("/url?") || link.includes("google.com/url")) {
-        const parts = link.split("url=");
-        if (parts.length > 1) {
-            const cleanUrl = parts[1].split("&")[0];
-            return decodeURIComponent(cleanUrl);
-        }
-    }
-
-    // Case 2: Is it already a full URL?
+    // 1. If it's already a full valid URL (http/https), trust it.
     if (link.startsWith("http")) return link;
 
-    // Case 3: Is it a relative store link? (e.g. /dp/B08...)
-    const lowerSource = source ? source.toLowerCase() : "";
-    if (lowerSource.includes("amazon") && !link.startsWith("http")) return `https://www.amazon.in${link}`;
-    if (lowerSource.includes("flipkart") && !link.startsWith("http")) return `https://www.flipkart.com${link}`;
-    if (lowerSource.includes("croma") && !link.startsWith("http")) return `https://www.croma.com${link}`;
+    // 2. If it is a Google Redirect or Ad link (starts with /url, /aclk, /shopping),
+    // we PREPEND google.com. Google will then bounce the user to the real store.
+    if (link.startsWith("/")) {
+        return `https://www.google.com${link}`;
+    }
 
-    // Case 4: If we still don't know what it is, Google Shopping Search.
+    // 3. Fallback for weird partial links: try to guess the domain based on source
+    const lowerSource = source ? source.toLowerCase() : "";
+    if (lowerSource.includes("amazon")) return `https://www.amazon.in${link.startsWith("/") ? "" : "/"}${link}`;
+    if (lowerSource.includes("flipkart")) return `https://www.flipkart.com${link.startsWith("/") ? "" : "/"}${link}`;
+
+    // 4. Last resort: Search
     return `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(title)}`;
   };
 
@@ -127,7 +118,7 @@ function SearchResults() {
     <div className="min-h-screen p-6 md:p-12 font-sans transition-colors duration-300 bg-[#f0f4f8] dark:bg-[#1e293b]">
       <div className="max-w-7xl mx-auto">
         
-        {/* Header Section */}
+        {/* Header */}
         <div className="mb-8 flex flex-col gap-6">
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between p-6 rounded-[2rem] transition-all
             bg-[#f0f4f8] dark:bg-[#1e293b]
@@ -164,7 +155,7 @@ function SearchResults() {
                 </div>
             </div>
 
-            {/* Store Filter Pills */}
+            {/* Filter Pills */}
             {!loading && (
                 <div className="flex gap-4 overflow-x-auto pb-4 px-2 no-scrollbar">
                     {stores.map((store) => (
@@ -195,8 +186,6 @@ function SearchResults() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {displayResults.map((item, index) => {
               const isCheapest = getPriceValue(item.price) === lowestPrice;
-              
-              // 🔹 Generate the Fail-Safe Link
               const safeLink = getSafeLink(item.link, item.source, item.name);
 
               return (
