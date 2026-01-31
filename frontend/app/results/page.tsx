@@ -29,7 +29,7 @@ function SearchResults() {
   useEffect(() => {
     if (query) {
       setLoading(true);
-      fetch(`https://price-ai-backend.onrender.com/search/${query}`)
+      fetch(`https://price-ai.onrender.com/search/${query}`)
         .then((res) => res.json())
         .then((data) => {
           setResults(data.results);
