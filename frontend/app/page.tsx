@@ -11,6 +11,8 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null); 
   const router = useRouter();
   const { theme, setTheme } = useTheme(); 
+  
+  // We use this to prevent hydration mismatch on the Theme Toggle
   const [mounted, setMounted] = useState(false); 
 
   useEffect(() => {
@@ -33,15 +35,13 @@ export default function Home() {
     }
   };
 
-  if (!mounted) return null;
-
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-300 bg-[#f0f4f8] dark:bg-[#1e293b]">
       
       {/* 🔹 Top Navigation Bar */}
-      <div className="absolute top-6 right-6 flex items-center gap-4">
+      <div className="absolute top-6 right-6 flex items-center gap-4 flex-wrap justify-end">
         
-        {/* 🌙 Dark Mode Toggle */}
+        {/* 🌙 Dark Mode Toggle - Only render icon when mounted to prevent error */}
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           className="w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all
@@ -49,14 +49,25 @@ export default function Home() {
           shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff]
           dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55]
           hover:scale-110 active:scale-95"
+          title="Toggle Theme"
         >
-          {theme === "dark" ? "☀️" : "🌙"}
+          {mounted ? (theme === "dark" ? "☀️" : "🌙") : "🌙"}
         </button>
 
         {user ? (
           // IF LOGGED IN
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap justify-end">
             
+            {/* 📦 Orders Button */}
+            <Link href="/orders">
+                <button className="hidden md:block px-4 py-2 rounded-xl font-bold text-gray-600 dark:text-gray-300 bg-[#f0f4f8] dark:bg-[#1e293b] 
+                shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff] 
+                dark:shadow-[6px_6px_12px_#0f172a,-6px_-6px_12px_#2d3b55] 
+                hover:scale-105 transition-transform">
+                📦 Orders
+                </button>
+            </Link>
+
             {/* ❤️ Wishlist Button */}
             <Link href="/wishlist">
                 <button className="hidden md:block px-4 py-2 rounded-xl font-bold text-gray-600 dark:text-gray-300 bg-[#f0f4f8] dark:bg-[#1e293b] 
@@ -67,7 +78,7 @@ export default function Home() {
                 </button>
             </Link>
 
-            {/* 🛒 Cart Button (NEW) */}
+            {/* 🛒 Cart Button */}
             <Link href="/cart">
                 <button className="hidden md:block px-4 py-2 rounded-xl font-bold text-gray-600 dark:text-gray-300 bg-[#f0f4f8] dark:bg-[#1e293b] 
                 shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff] 
@@ -77,9 +88,10 @@ export default function Home() {
                 </button>
             </Link>
 
-            <span className="font-bold text-gray-700 dark:text-gray-200 hidden md:block">
+            <span className="font-bold text-gray-700 dark:text-gray-200 hidden lg:block">
               {user.displayName ? `Hi, ${user.displayName.split(' ')[0]}` : "Welcome"} 👋
             </span>
+            
             <button
               onClick={handleLogout}
               className="px-6 py-2 rounded-xl font-bold text-white bg-red-500 shadow-lg hover:scale-105 transition-transform"
@@ -121,7 +133,7 @@ export default function Home() {
           bg-[#f0f4f8] dark:bg-[#1e293b] text-gray-700 dark:text-gray-200
           shadow-[inset_10px_10px_20px_#cdd4db,inset_-10px_-10px_20px_#ffffff]
           dark:shadow-[inset_10px_10px_20px_#0f172a,inset_-10px_-10px_20px_#2d3b55]
-          focus:ring-2 focus:ring-blue-400"
+          focus:ring-2 focus:ring-blue-400 focus:shadow-none"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
