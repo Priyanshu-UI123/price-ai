@@ -97,6 +97,9 @@ export default function Home() {
       <div className="absolute top-16 right-6 z-50 flex items-center gap-3">
           
           <div className="hidden md:flex items-center gap-4">
+              {/* ✨ About Nav Button */}
+              <NavButton href="/about" label="About" icon="✨" color="rgba(168,85,247,0.3)" />
+
               {user ? (
                   <>
                       <NavButton href="/orders" label="Orders" icon="📦" color="rgba(59,130,246,0.3)" />
@@ -139,6 +142,10 @@ export default function Home() {
               >
                   <button onClick={() => setIsMenuOpen(false)} className="self-end text-3xl">✕</button>
                   <div className="font-black text-2xl dark:text-white">Menu</div>
+                  
+                  {/* ✨ Mobile About Link */}
+                  <Link href="/about" onClick={() => setIsMenuOpen(false)} className="text-xl font-bold dark:text-white">✨ About Us</Link>
+                  
                   {user ? (
                       <>
                         <Link href="/orders" onClick={() => setIsMenuOpen(false)} className="text-xl font-bold dark:text-white">📦 Orders</Link>
