@@ -2,7 +2,6 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-// Define the shape of the data
 interface Product {
   name: string;
   price: string;
@@ -12,9 +11,6 @@ interface Product {
   image: string;
 }
 
-// ---------------------------------------------------------
-// 1. The Logic Component (Handles the search)
-// ---------------------------------------------------------
 function SearchResults() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q"); 
@@ -25,7 +21,7 @@ function SearchResults() {
   useEffect(() => {
     if (query) {
       setLoading(true);
-      // NOTE: Make sure this URL matches your Render Backend URL
+      // REMEMBER: Keep this as your Render URL for production!
       fetch(`https://price-ai.onrender.com/search/${query}`)
         .then((res) => res.json())
         .then((data) => {
@@ -41,31 +37,41 @@ function SearchResults() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-          <a href="/" className="text-blue-600 hover:underline mb-4 inline-block">← Back to Search</a>
-          <h1 className="text-3xl font-extrabold text-gray-800">
-            Best Prices for: <span className="text-blue-600 capitalize">{query}</span>
-          </h1>
+      {/* Clay Header */}
+      <div className="mb-10 flex flex-col md:flex-row items-center justify-between bg-[#f0f4f8] p-6 rounded-[2rem] shadow-[10px_10px_20px_#cdd4db,-10px_-10px_20px_#ffffff]">
+          <div className="flex items-center gap-4">
+            <a href="/" className="bg-[#f0f4f8] w-12 h-12 flex items-center justify-center rounded-full text-blue-500 shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff] hover:scale-95 transition-transform">
+              ←
+            </a>
+            <h1 className="text-2xl font-bold text-gray-700">
+              Results for: <span className="text-blue-500 capitalize">{query}</span>
+            </h1>
+          </div>
       </div>
 
-      {/* Loading State */}
+      {/* Loading State - Clay Spinner */}
       {loading ? (
         <div className="flex flex-col items-center justify-center mt-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-          <p className="text-xl text-gray-600">Gathering prices from across India...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-500 shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff]"></div>
+          <p className="mt-6 text-xl text-gray-500 font-medium">Inflating results...</p>
         </div>
       ) : (
         /* Results Grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {results.map((item, index) => (
             <div 
               key={index} 
-              className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col group"
+              className="bg-[#f0f4f8] rounded-[2.5rem] p-4 flex flex-col group transition-all duration-300
+              shadow-[12px_12px_24px_#cdd4db,-12px_-12px_24px_#ffffff]
+              hover:shadow-[16px_16px_32px_#cdd4db,-16px_-16px_32px_#ffffff] hover:-translate-y-2"
             >
-              {/* Product Image */}
-              <div className="h-56 p-6 bg-white flex items-center justify-center border-b border-gray-50 relative">
-                  <span className="absolute top-3 left-3 px-3 py-1 text-xs font-bold text-gray-600 bg-gray-100 rounded-full uppercase tracking-wider shadow-sm">
+              
+              {/* Product Image Container (Inset Clay) */}
+              <div className="h-48 rounded-[2rem] bg-[#f0f4f8] flex items-center justify-center relative p-4
+                 shadow-[inset_6px_6px_12px_#cdd4db,inset_-6px_-6px_12px_#ffffff]">
+                  
+                  {/* Floating Badge */}
+                  <span className="absolute top-4 left-4 px-3 py-1 text-[10px] font-extrabold text-blue-500 bg-[#f0f4f8] rounded-full uppercase tracking-wider shadow-[4px_4px_8px_#cdd4db,-4px_-4px_8px_#ffffff]">
                       {item.source}
                   </span>
                   
@@ -73,35 +79,35 @@ function SearchResults() {
                       <img 
                           src={item.image} 
                           alt={item.name} 
-                          className="h-full w-full object-contain group-hover:scale-105 transition-transform duration-300" 
+                          className="h-full w-full object-contain mix-blend-multiply" 
                       />
                   ) : (
-                      <div className="text-gray-300 text-sm">No Image Available</div>
+                      <div className="text-gray-300 text-xs">No Image</div>
                   )}
               </div>
 
-              {/* Product Details */}
-              <div className="p-5 flex-1 flex flex-col justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-800 text-lg leading-tight mb-3 line-clamp-2" title={item.name}>
-                    {item.name}
-                  </h3>
-                </div>
+              {/* Details */}
+              <div className="p-4 flex-1 flex flex-col justify-between">
+                <h3 className="font-bold text-gray-700 text-md leading-snug mb-3 line-clamp-2" title={item.name}>
+                  {item.name}
+                </h3>
                 
-                <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
+                <div className="flex items-end justify-between mt-2">
                    <div>
-                      <p className="text-xs text-gray-500 font-medium">Best Price</p>
-                      <p className="text-2xl font-bold text-green-700">
+                      <p className="text-xs text-gray-400 font-bold mb-1">BEST PRICE</p>
+                      <p className="text-2xl font-black text-gray-800">
                           {item.displayPrice || `₹${item.price}`}
                       </p>
                    </div>
+                   
+                   {/* Buy Button (Small Clay Pop) */}
                    <a 
                      href={item.link} 
                      target="_blank"
                      rel="noopener noreferrer"
-                     className="bg-gray-900 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-600 transition-colors shadow-md"
+                     className="bg-blue-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-[4px_4px_8px_#cdd4db,-4px_-4px_8px_#ffffff] hover:scale-110 transition-transform"
                    >
-                     Buy Now
+                     ➔
                    </a>
                 </div>
               </div>
@@ -111,22 +117,19 @@ function SearchResults() {
       )}
       
       {!loading && results.length === 0 && (
-          <div className="text-center mt-20 text-gray-500">
-              <p className="text-xl">No results found.</p>
-              <p>Try searching for a simpler term like "iPhone 15"</p>
+          <div className="text-center mt-20 text-gray-400 font-medium">
+              <p className="text-xl">No results found 😢</p>
+              <p>Try searching for "Samsung S24"</p>
           </div>
       )}
     </div>
   );
 }
 
-// ---------------------------------------------------------
-// 2. The Page Component (Wraps logic in Suspense)
-// ---------------------------------------------------------
 export default function ResultsPage() {
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-12 font-sans text-gray-900">
-      <Suspense fallback={<div className="text-center mt-20">Loading Search...</div>}>
+    <div className="min-h-screen bg-[#f0f4f8] p-6 md:p-12 font-sans text-gray-900">
+      <Suspense fallback={<div className="text-center mt-20 text-gray-400">Loading Clay UI...</div>}>
         <SearchResults />
       </Suspense>
     </div>

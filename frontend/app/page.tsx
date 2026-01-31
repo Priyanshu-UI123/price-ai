@@ -13,27 +13,47 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4">
-      <h1 className="text-5xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-        PriceAI 🇮🇳
-      </h1>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#f0f4f8] font-sans">
       
-      <div className="w-full max-w-lg flex flex-col gap-4">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="What are you looking for?"
-          className="w-full p-4 text-lg border-2 border-gray-200 rounded-full shadow-sm focus:border-blue-500 focus:outline-none px-6"
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-        />
+      {/* 1. Main Container (The Clay Tablet) */}
+      <div className="bg-[#f0f4f8] p-10 rounded-[3rem] shadow-[20px_20px_60px_#cdd4db,-20px_-20px_60px_#ffffff] max-w-xl w-full flex flex-col items-center text-center">
         
-        <button
-          onClick={handleSearch}
-          className="self-center bg-gray-900 text-white px-8 py-3 rounded-full font-semibold hover:bg-gray-800 transition"
-        >
-          Search Prices
-        </button>
+        {/* Title */}
+        <h1 className="text-5xl font-extrabold mb-8 text-gray-700 tracking-tight">
+          Price<span className="text-blue-500">AI</span> 🍦
+        </h1>
+        
+        <p className="text-gray-500 mb-8 text-lg font-medium">
+          Find the best deals across Amazon, Flipkart & more.
+        </p>
+        
+        <div className="w-full flex flex-col gap-6">
+          {/* 2. Input Field (Pressed In / Debossed Look) */}
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search for iPhone 15..."
+            className="w-full p-5 text-xl bg-[#f0f4f8] rounded-2xl text-gray-600 placeholder-gray-400 outline-none transition-all
+            shadow-[inset_6px_6px_12px_#cdd4db,inset_-6px_-6px_12px_#ffffff] 
+            focus:shadow-[inset_4px_4px_8px_#cdd4db,inset_-4px_-4px_8px_#ffffff] border border-transparent focus:border-blue-200"
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          />
+          
+          {/* 3. Button (Popped Out / Embossed Look) */}
+          <button
+            onClick={handleSearch}
+            className="w-full py-4 text-xl font-bold text-white rounded-2xl transition-transform active:scale-95 bg-blue-500
+            shadow-[6px_6px_12px_#cdd4db,-6px_-6px_12px_#ffffff]
+            hover:bg-blue-600 hover:shadow-[8px_8px_16px_#cdd4db,-8px_-8px_16px_#ffffff]"
+          >
+            Find Best Price 🚀
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-12 text-gray-400 text-sm font-semibold tracking-wide">
+        POWERED BY SERPAPI & AI
       </div>
     </div>
   );
