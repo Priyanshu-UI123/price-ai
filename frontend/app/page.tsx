@@ -2,7 +2,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
-import { auth } from "./firebase"; 
+import { auth, db } from "./firebase"; // 🔹 Added db import
+import { doc, getDoc } from "firebase/firestore"; // 🔹 Added Firestore imports
 import Link from "next/link";
 import { useTheme } from "next-themes"; 
 import { motion, AnimatePresence } from "framer-motion";
@@ -42,7 +43,8 @@ function TopScrollingBanner() {
 
 export default function Home() {
   const [query, setQuery] = useState("");
-  const [user, setUser] = useState<User | null>(null); 
+  const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false); // 🔹 New State for Admin
   const router = useRouter();
   const { theme, setTheme } = useTheme(); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -50,13 +52,29 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => setUser(currentUser));
+    // 🔹 Updated Auth Listener with Admin Check
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        // Check Firestore for 'admin' role
+        const userRef = doc(db, "users", currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists() && userSnap.data().role === "admin") {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    });
     return () => unsubscribe(); 
   }, []);
 
   const handleLogout = async () => {
     await signOut(auth);
     setIsMenuOpen(false);
+    setIsAdmin(false); // Reset admin state on logout
   };
 
   if (!mounted) return null;
@@ -99,6 +117,11 @@ export default function Home() {
           <div className="hidden md:flex items-center gap-4">
               {/* ✨ About Nav Button */}
               <NavButton href="/about" label="About" icon="✨" color="rgba(168,85,247,0.3)" />
+
+              {/* 🛡️ ADMIN BUTTON (Only shows if isAdmin is true) */}
+              {isAdmin && (
+                <NavButton href="/admin" label="Admin" icon="🛡️" color="rgba(147,51,234,0.5)" />
+              )}
 
               {user ? (
                   <>
@@ -146,6 +169,11 @@ export default function Home() {
                   {/* ✨ Mobile About Link */}
                   <Link href="/about" onClick={() => setIsMenuOpen(false)} className="text-xl font-bold dark:text-white">✨ About Us</Link>
                   
+                  {/* 🛡️ Mobile Admin Link */}
+                  {isAdmin && (
+                     <Link href="/admin" onClick={() => setIsMenuOpen(false)} className="text-xl font-bold text-purple-500">🛡️ Admin Panel</Link>
+                  )}
+
                   {user ? (
                       <>
                         <Link href="/orders" onClick={() => setIsMenuOpen(false)} className="text-xl font-bold dark:text-white">📦 Orders</Link>
