@@ -2,8 +2,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
-import { auth, db } from "./firebase"; // 🔹 Added db import
-import { doc, getDoc } from "firebase/firestore"; // 🔹 Added Firestore imports
+import { auth, db } from "./firebase"; 
+import { doc, getDoc, setDoc, arrayUnion } from "firebase/firestore"; // 🔹 Added setDoc & arrayUnion
 import Link from "next/link";
 import { useTheme } from "next-themes"; 
 import { motion, AnimatePresence } from "framer-motion";
@@ -44,7 +44,7 @@ function TopScrollingBanner() {
 export default function Home() {
   const [query, setQuery] = useState("");
   const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false); // 🔹 New State for Admin
+  const [isAdmin, setIsAdmin] = useState(false); 
   const router = useRouter();
   const { theme, setTheme } = useTheme(); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -52,7 +52,6 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
-    // 🔹 Updated Auth Listener with Admin Check
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
@@ -74,7 +73,32 @@ export default function Home() {
   const handleLogout = async () => {
     await signOut(auth);
     setIsMenuOpen(false);
-    setIsAdmin(false); // Reset admin state on logout
+    setIsAdmin(false); 
+  };
+
+  // 🔹 NEW: Handle Search & Record History
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+
+    // Record history if user is logged in
+    if (user) {
+      try {
+        const userRef = doc(db, "users", user.uid);
+        // Using setDoc with merge to ensure we don't overwrite other fields
+        await setDoc(userRef, {
+          searchHistory: arrayUnion({
+            term: query,
+            timestamp: new Date().toISOString()
+          }),
+          lastActive: new Date().toISOString()
+        }, { merge: true });
+      } catch (error) {
+        console.error("Error recording history:", error);
+      }
+    }
+
+    router.push(`/results?q=${encodeURIComponent(query)}`);
   };
 
   if (!mounted) return null;
@@ -212,7 +236,8 @@ export default function Home() {
             Price<span className="text-transparent bg-clip-text bg-gradient-to-b from-blue-400 to-blue-600 drop-shadow-2xl">AI</span>
         </motion.h1>
 
-        <form onSubmit={(e) => { e.preventDefault(); if(query) router.push(`/results?q=${query}`); }} className="w-full max-w-3xl relative group">
+        {/* 🔹 UPDATED FORM with handleSearch */}
+        <form onSubmit={handleSearch} className="w-full max-w-3xl relative group">
             <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-[3rem] blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
             <input
                 type="text"
