@@ -86,7 +86,7 @@ function SearchResults() {
   useEffect(() => {
     if (query) {
       setLoading(true);
-      fetch(`https://price-ai.onrender.com/search/${query}`)
+      fetch(`https://priyansu123-price-ai-api.hf.space/search/${query}`)
         .then((res) => res.json())
         .then((data) => {
           const enrichedResults = data.results.map((item: any) => ({
