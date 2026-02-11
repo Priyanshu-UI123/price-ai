@@ -12,19 +12,29 @@ jobs:
         with:
           fetch-depth: 0
           
-      - name: Clean up and Push to Hugging Face
+      - name: Clean Slate Deploy to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # 1. Tell git who is making this temporary change
-          git config --global user.email "action@github.com"
-          git config --global user.name "GitHub Action"
+          # 1. Create a brand new, empty staging folder
+          mkdir hf_deploy
           
-          # 2. Remove the frontend folder from the delivery box
-          git rm -rf frontend/ || true
+          # 2. Copy ONLY the backend folder and Dockerfile into it
+          cp -r backend hf_deploy/
+          cp Dockerfile hf_deploy/
           
-          # 3. Save the package without the frontend
-          git commit -m "Removed frontend for Hugging Face deploy" || true
+          # 3. Go inside the clean folder
+          cd hf_deploy
           
-          # 4. Push the cleaned-up package to Hugging Face
-          git push https://Priyansu123:$HF_TOKEN@huggingface.co/spaces/Priyansu123/price-ai-api HEAD:main -f
+          # 4. Turn this folder into a brand new Git repository with NO history
+          git init
+          git checkout -b main
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          
+          # 5. Pack up these specific files
+          git add .
+          git commit -m "Clean deploy to Hugging Face"
+          
+          # 6. Force push this fresh slate to your Space
+          git push https://Priyansu123:$HF_TOKEN@huggingface.co/spaces/Priyansu123/price-ai-api main -f
