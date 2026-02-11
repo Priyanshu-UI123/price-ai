@@ -1,7 +1,7 @@
 name: Sync to Hugging Face
 on:
   push:
-    branches: [main] # or 'master' if your main branch is called master
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -14,5 +14,4 @@ jobs:
       - name: Push to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        # REPLACE 'your-hf-username/your-space-name' below!
-        run: git push https://your-hf-username:$HF_TOKEN@huggingface.co/spaces/your-hf-username/your-space-name main -f
+        run: git push https://Priyansu123:$HF_TOKEN@huggingface.co/spaces/Priyansu123/price-ai-api main -f
