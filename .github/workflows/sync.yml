@@ -19,11 +19,11 @@ jobs:
           # 1. Create a brand new, empty staging folder
           mkdir hf_deploy
           
-          # 2. Copy ONLY the backend folder and Dockerfile into it
-          cp -r backend hf_deploy/
+          # 2. Copy the CONTENTS of the backend folder directly into it (The Fix!)
+          cp -a backend/. hf_deploy/
           cp Dockerfile hf_deploy/
           
-          # 3. Create the required Hugging Face config file (The ID Card)
+          # 3. Create the required Hugging Face config file
           cat <<EOF > hf_deploy/README.md
           ---
           title: Price AI API
@@ -47,7 +47,7 @@ jobs:
           
           # 6. Pack up these specific files
           git add .
-          git commit -m "Clean deploy with README config"
+          git commit -m "Clean deploy with fixed file paths"
           
           # 7. Force push this fresh slate to your Space
           git push https://Priyansu123:$HF_TOKEN@huggingface.co/spaces/Priyansu123/price-ai-api main -f
